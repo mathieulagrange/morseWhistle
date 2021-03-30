@@ -1,0 +1,29 @@
+<!doctype html>
+<html ng-app="morseWhistle">
+
+<head>
+  <meta charset="utf-8" />
+  <title>morseWhistle</title>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.js"></script>
+
+  <script src="app.js"></script>
+  <script src="whistleController.js"></script>
+</head>
+
+<body  ng-controller="whistleController">
+
+  <p>uses audioContext.createScriptProcessor(buffer size) Web Audio API. Use https://webaudio.github.io/web-audio-api/#audioworklet</p>
+        <canvas id="meter" width="1100" height="60"></canvas>
+
+        <p>On Android press button to start (fixes new security requirement added in the new Android OS version)</p>
+        <button ng-click="setMic()">Start</button>
+
+  <div>Amplitude: {{amplitude}} </div>
+  <div>{{amplitudeThreshold}} </div>
+  <div>Ratio: {{ratio}} </div>
+  <div>{{ratioThreshold}} </div>
+  <div ng-show="trigger">TRIGGER</div>
+  <div ng-show="short">SHORT</div>
+  <div ng-show="long">LONG</div>
+</body>
