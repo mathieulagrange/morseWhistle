@@ -1,7 +1,7 @@
 app.controller("whistleController", ['$scope', '$timeout', '$window', function($scope, $timeout, $window) {
 
-  fmin = 500
-  fmax = 2000
+  fMinHertz = 500
+  fMaxHertz = 2000
 
   hop = 20
 
@@ -21,19 +21,25 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   dataArray = null
   var analyser = null
 
-  var acc = 0
-  var short = false
-  var long = false
-  var show = false
-  var up = 0
+  // frame accumulator
+  var frameAccumulator = 0
+  // number of clip where a whistle is detected
+  var nbWhistleClip = 0
+  // number of clip with no whistle
+  var nbSilentClip = 0
+  //
+  var max = 0
+  //
+  var med = 0
 
-  max = 0
-  med = 0
+  var code = [0, 0, 0, 0]
+  var codeIndex = 0
+  $scope.code = [1, 1, 1 ,1]
 
   function update() {
     analyser.getFloatFrequencyData(dataArray)
-    fMin = Math.ceil(fmin/audioContext.sampleRate*fftSize)
-    fMax = Math.ceil(fmax/audioContext.sampleRate*fftSize)
+    fMin = Math.ceil(fMinHertz/audioContext.sampleRate*fftSize)
+    fMax = Math.ceil(fMaxHertz/audioContext.sampleRate*fftSize)
 
     data = new Float32Array(fMax-fMin);
     m = -200
@@ -44,30 +50,48 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
     }
     max += m
     med += median(data)
-    acc += 1
-    if (acc==13) {
-      if (max-med > $scope.ratioThreshold*acc  && max > $scope.amplitudeThreshold*acc) {
-        up += 1
-        if (up==3) {
+    frameAccumulator += 1
+    if (frameAccumulator==13) {
+      if (max-med > $scope.ratioThreshold*frameAccumulator  && max > $scope.amplitudeThreshold*frameAccumulator) {
+        nbSilentClip = 0
+        nbWhistleClip += 1
+        if (nbWhistleClip==3) {
           $scope.long = true
-          up = 0
+          code[codeIndex] = 2
+          codeIndex += 1
+          nbWhistleClip = 0
         }
       }
       else {
-        if (up==1) {
+        if (nbWhistleClip==1) {
           $scope.short = true
+          code[codeIndex] = 1
+          codeIndex += 1
         }
-        else if (up == 0) {
+        else if (nbWhistleClip == 0) {
           $scope.long = false
           $scope.short = false
         }
-        up = 0
+        nbWhistleClip = 0
+        nbSilentClip += 1
+        code[codeIndex] = 0
+        codeIndex += 1
       }
-      $scope.amplitude = max/acc
-      $scope.ratio = (max-med)/acc
+      $scope.amplitude = max/frameAccumulator
+      $scope.ratio = (max-med)/frameAccumulator
       max=0
       med=0
-      acc=0
+      frameAccumulator=0
+
+      if (codeIndex==4) {
+        hasCode = false
+        for (var i = 0; i < code.length; i++) {
+          if (code[i]>0)
+            hasCode = true
+            $scope.code = code
+        }
+        codeIndex = 0
+      }
     }
 
     $timeout(function() {
@@ -76,7 +100,6 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   }
 
   $scope.setMic = function() {
-    console.log('pass');
   // monkeypatch Web Audio
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
