@@ -3,7 +3,9 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   fMinHertz = 500
   fMaxHertz = 2000
 
-  hop = 20
+  hop = 20 // ms
+
+  clipDuration = 20 // interval
 
   $scope.short = true
   $scope.long = true
@@ -11,10 +13,10 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   fftSize = 1024
 
   $scope.amplitudeThreshold = -70
-  $scope.ratioThreshold = 10
+  $scope.ratioThreshold = 35
 
-  $scope.amplitude = -70
-  $scope.ratio = 2
+  $scope.amplitude = 0
+  $scope.ratio = 0
 
   $scope.trigger = false
 
@@ -36,6 +38,8 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   var codeIndex = 0
   $scope.code = [1, 1, 1 ,1]
 
+  var micSet = false
+
   function update() {
     analyser.getFloatFrequencyData(dataArray)
     fMin = Math.ceil(fMinHertz/audioContext.sampleRate*fftSize)
@@ -51,47 +55,41 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
     max += m
     med += median(data)
     frameAccumulator += 1
-    if (frameAccumulator==13) {
-      if (max-med > $scope.ratioThreshold*frameAccumulator  && max > $scope.amplitudeThreshold*frameAccumulator) {
-        nbSilentClip = 0
+    if (frameAccumulator==clipDuration) {
+      frameAccumulator=0
+      console.log(nbWhistleClip);
+      if (max-med > $scope.ratioThreshold*clipDuration  && max > $scope.amplitudeThreshold*clipDuration
+      ) {
         nbWhistleClip += 1
-        if (nbWhistleClip==3) {
-          $scope.long = true
-          code[codeIndex] = 2
-          codeIndex += 1
-          nbWhistleClip = 0
-        }
       }
       else {
-        if (nbWhistleClip==1) {
+        nbSilentClip += 1
+        if (nbWhistleClip>0 && nbWhistleClip<3) {
           $scope.short = true
           code[codeIndex] = 1
           codeIndex += 1
+          nbSilentClip = 1
+        } else if (nbWhistleClip>=3) {
+          $scope.long = true
+          code[codeIndex] = 2
+          codeIndex += 1
+          nbSilentClip = 1
         }
         else if (nbWhistleClip == 0) {
           $scope.long = false
           $scope.short = false
         }
         nbWhistleClip = 0
-        nbSilentClip += 1
-        code[codeIndex] = 0
-        codeIndex += 1
+        if (codeIndex>0 && (nbSilentClip>3||codeIndex==4)) {
+          $scope.letter = getLetter(code)
+          $scope.code = code
+          codeIndex = 0
+        }
       }
-      $scope.amplitude = max/frameAccumulator
-      $scope.ratio = (max-med)/frameAccumulator
+      $scope.amplitude = max/clipDuration
+      $scope.ratio = (max-med)/clipDuration
       max=0
       med=0
-      frameAccumulator=0
-
-      if (codeIndex==4) {
-        hasCode = false
-        for (var i = 0; i < code.length; i++) {
-          if (code[i]>0)
-            hasCode = true
-            $scope.code = code
-        }
-        codeIndex = 0
-      }
     }
 
     $timeout(function() {
@@ -100,6 +98,12 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
   }
 
   $scope.setMic = function() {
+    if (micSet){
+      micSet = false
+      audioContext.close()
+    }
+    else {
+      micSet=true
   // monkeypatch Web Audio
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -137,6 +141,7 @@ app.controller("whistleController", ['$scope', '$timeout', '$window', function($
         alert('getUserMedia threw exception :' + e);
     }
 }
+}
 
 function didntGetStream() {
     alert('Stream generation failed.');
@@ -145,20 +150,50 @@ function didntGetStream() {
 var mediaStreamSource = null;
 
 function gotStream(stream) {
-    // Create an AudioNode from the stream.
     mediaStreamSource = audioContext.createMediaStreamSource(stream);
-
-      // Create a new volume meter and connect it.
-    // meter = createAudioMeter(audioContext);
     mediaStreamSource.connect(analyser);
     console.log(audioContext);
-    // kick off the visual updating
-    // drawLoop();
 }
 
   $scope.setMic()
   update()
 }])
+
+function getLetter(code){
+  dict = {
+    'a': [1, 2, 0, 0],
+    'b': [2, 1, 1, 1],
+    'c': [2, 1, 2 ,1],
+    'd': [2, 1, 1, 0],
+    'e': [1, 0, 0, 0],
+    'f': [1, 1, 2, 1],
+    'g': [2, 2, 1, 0],
+    'h': [1, 1, 1, 1],
+    'i': [1, 1, 0, 0],
+    'j': [1, 2, 2, 2],
+    'k': [],
+    'l': [],
+    'm': [],
+    'n': [],
+    'o': [],
+    'p': [],
+    'q': [],
+    'r': [],
+    's': [],
+    't': [],
+    'u': [],
+    'v': [],
+    'x': [],
+    'y': [],
+    'z': []
+  }
+  for(var key in dict) {
+    if (arraysEqual(dict[key], code))
+      return key
+  }
+  return 0
+  console.log(code)
+}
 
 function median(values){
   if(values.length ===0) return 0;
@@ -173,4 +208,20 @@ function median(values){
     return values[half];
 
   return (values[half - 1] + values[half]) / 2.0;
+}
+
+function arraysEqual(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+
+  // If you don't care about the order of the elements inside
+  // the array, you should sort both arrays here.
+  // Please note that calling sort on an array will modify that array.
+  // you might want to clone your array first.
+
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
