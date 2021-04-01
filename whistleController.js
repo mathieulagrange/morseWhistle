@@ -1,5 +1,6 @@
 app.controller("whistleController", ['$scope', '$timeout', '$window', function($scope, $timeout, $window) {
 
+  $scope.alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 't', 'u', 'v', 'w', 'x', 'y', 'z']
   fMinHertz = 500
   fMaxHertz = 2000
 
