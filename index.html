@@ -15,11 +15,17 @@
 
 <body  ng-controller="whistleController">
 
-  <p>uses audioContext.createScriptProcessor(buffer size) Web Audio API. Use https://webaudio.github.io/web-audio-api/#audioworklet</p>
-        <canvas id="meter" width="1100" height="60"></canvas>
+  <div style="text-align:center">
+    <div class="recbutton" ng-click="setMic()">
+      <div class="text">{{micMessage}}
+      </div>
+    </div>
+  </div>
 
-        <p>On Android press button to start (fixes new security requirement added in the new Android OS version)</p>
-        <button ng-click="setMic()">Start</button>
+  <div class="button" ng-repeat="value in alphabet">
+    <div ng-click="synMorse(value)" class="text">{{value}}
+    </div>
+  </div>
 
   <div>Amplitude: {{amplitude}} </div>
   <div>{{amplitudeThreshold}} </div>
@@ -29,5 +35,4 @@
   <div ng-show="short">SHORT</div>
   <div ng-show="long">LONG</div>
   <div>{{code}}</div>
-  <div class="button" ng-repeat="value in alphabet"><div class="text">{{value}}</div></div>
 </body>
