@@ -1,44 +1,48 @@
   app.controller("whistleController", ['$scope', '$timeout', '$window', function($scope, $timeout, $window) {
-
-    $scope.alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-
-    var dict = {
-      'a': [1, 2, 0, 0],
-      'b': [2, 1, 1, 1],
-      'c': [2, 1, 2 ,1],
-      'd': [2, 1, 1, 0],
-      'e': [1, 0, 0, 0],
-      'f': [1, 1, 2, 1],
-      'g': [2, 2, 1, 0],
-      'h': [1, 1, 1, 1],
-      'i': [1, 1, 0, 0],
-      'j': [1, 2, 2, 2],
-      'k': [2, 1, 2, 0],
-      'l': [1, 2, 1, 1],
-      'm': [2, 2, 0, 0],
-      'n': [2, 1, 0, 0],
-      'o': [2, 2, 2, 0],
-      'p': [1, 2, 2, 1],
-      'q': [2, 2, 1, 2],
-      'r': [1, 2, 1, 0],
-      's': [1, 1, 1, 0],
-      't': [2, 0, 0, 0],
-      'u': [1, 1, 2, 0],
-      'v': [1, 1, 1, 2],
-      'x': [2, 1, 1, 2],
-      'y': [2, 1, 2, 2],
-      'z': [2, 2, 1, 1]
+    $scope.letter = ''
+    $scope.alphabet = {
+      'a': ['.', '-', ' ', ' '],
+      'b': ['-', '.', '.', '.'],
+      'c': ['-', '.', '-' ,'.'],
+      'd': ['-', '.', '.', ' '],
+      'e': ['.', ' ', ' ', ' '],
+      'f': ['.', '.', '-', '.'],
+      'g': ['-', '-', '.', ' '],
+      'h': ['.', '.', '.', '.'],
+      'i': ['.', '.', ' ', ' '],
+      'j': ['.', '-', '-', '-'],
+      'k': ['-', '.', '-', ' '],
+      'l': ['.', '-', '.', '.'],
+      'm': ['-', '-', ' ', ' '],
+      'n': ['-', '.', ' ', ' '],
+      'o': ['-', '-', '-', ' '],
+      'p': ['.', '-', '-', '.'],
+      'q': ['-', '-', '.', '-'],
+      'r': ['.', '-', '.', ' '],
+      's': ['.', '.', '.', ' '],
+      't': ['-', ' ', ' ', ' '],
+      'u': ['.', '.', '-', ' '],
+      'v': ['.', '.', '.', '-'],
+      'w': ['.', '-', '-', ' '],
+      'x': ['-', '.', '.', '-'],
+      'y': ['-', '.', '-', '-'],
+      'z': ['-', '-', '.', '.']
     }
 
     fMinHertz = 500
     fMaxHertz = 2000
 
-    hop = 20 // ms
+    hop = 25 // ms
 
     clipDuration = 20 // interval
 
-    $scope.short = true
-    $scope.long = true
+    bufferMax = new Float32Array(clipDuration);
+    bufferMedian = new Float32Array(clipDuration);
+    bufferIndex = 0
+    for (var i = 0; i < bufferMax.length; i++) {
+      bufferMax[i] = 0
+      bufferMedian[i] = 0
+    }
 
     fftSize = 1024
 
@@ -48,7 +52,6 @@
     $scope.amplitude = 0
     $scope.ratio = 0
     $scope.micMessage = 'record'
-    $scope.trigger = false
 
     dataArray = null
     var analyser = null
@@ -64,11 +67,13 @@
     //
     var med = 0
 
-    var code = [0, 0, 0, 0]
+    var synCode = null
+    var code = []
     var codeIndex = 0
-    $scope.code = [1, 1, 1 ,1]
+    $scope.code = [' ', ' ', ' ', ' ']
 
     var micSet = false
+    var waitNext = 0
 
     function update() {
       analyser.getFloatFrequencyData(dataArray)
@@ -82,44 +87,56 @@
         if (m < data[i])
           m = data[i]
       }
-      max += m
-      med += median(data)
-      frameAccumulator += 1
-      if (frameAccumulator==clipDuration) {
-        frameAccumulator=0
-        console.log(nbWhistleClip);
-        if (max-med > $scope.ratioThreshold*clipDuration  && max > $scope.amplitudeThreshold*clipDuration
-        ) {
+      bufferMax[bufferIndex] = m
+      bufferMedian[bufferIndex] = median(data)
+      bufferIndex = (bufferIndex+1)%clipDuration
+      meanMax = 0
+      meanMedian = 0
+      for (var i = 0; i < bufferMax.length; i++) {
+        meanMax += bufferMax[i]
+        meanMedian += bufferMedian[i]
+      }
+      if (waitNext == 0) {
+        if (meanMax-meanMedian > $scope.ratioThreshold*clipDuration  && meanMax > $scope.amplitudeThreshold*clipDuration) {
           nbWhistleClip += 1
+          waitNext = clipDuration
+          console.log(nbWhistleClip);
         }
         else {
+          if (nbWhistleClip) {
+            console.log('cut');
+            if (nbWhistleClip<3) {
+              code[codeIndex] = '.'
+              codeIndex += 1
+            }
+            else {
+              code[codeIndex] = '-'
+              codeIndex += 1
+            }
+            nbWhistleClip = 0
+            nbSilentClip  = 0
+          }
+          waitNext = clipDuration
           nbSilentClip += 1
-          if (nbWhistleClip>0 && nbWhistleClip<3) {
-            $scope.short = true
-            code[codeIndex] = 1
-            codeIndex += 1
-            nbSilentClip = 1
-          } else if (nbWhistleClip>=3) {
-            $scope.long = true
-            code[codeIndex] = 2
-            codeIndex += 1
-            nbSilentClip = 1
-          }
-          else if (nbWhistleClip == 0) {
-            $scope.long = false
-            $scope.short = false
-          }
-          nbWhistleClip = 0
           if (codeIndex>0 && (nbSilentClip>3||codeIndex==4)) {
-            $scope.letter = getLetter(code)
-            $scope.code = code
-            codeIndex = 0
+             console.log(code);
+             $scope.letter = getLetter($scope.alphabet, code)
+             $timeout(function () {
+               $scope.letter = ''
+             }, 1000);
+             console.log($scope.letter);
+             code = []
+             codeIndex = 0
           }
-        }
-        $scope.amplitude = max/clipDuration
-        $scope.ratio = (max-med)/clipDuration
-        max=0
-        med=0
+      }
+    }
+
+      $scope.amplitude = meanMax/clipDuration
+      $scope.ratio = (meanMax-meanMedian)/clipDuration
+      max=0
+      med=0
+      if (waitNext>0) {
+        waitNext-=1
       }
 
       $timeout(function() {
@@ -150,27 +167,27 @@
 
       oscillator.connect(gain);
       gain.connect(synAudio.destination);
-      code = [...dict[letter]]
+      synCode = [...$scope.alphabet[letter]]
       oscillator.start();
-      synSequence(code);
+      synSequence(synCode);
     }
   }
 
-    function synSequence (code) {
+    function synSequence (synCode) {
       gain.gain.value = 0.2;
 
-      if (code.length == 0 || code[0]==0) {
+      if (synCode.length == 0 || synCode[0]==' ') {
         synAudio.close()
         synAudio = null
       }
       else {
         var duration = clipDuration*hop
-        if (code[0]==2) {
+        if (synCode[0]=='-') {
           duration *= 3
         }
-        code.shift()
+        synCode.shift()
         $timeout(function(){gain.gain.value = 0}, duration)
-        $timeout(function(){synSequence(code)}, duration+clipDuration*hop)
+        $timeout(function(){synSequence(synCode)}, duration+clipDuration*hop)
       }
     }
 
@@ -238,13 +255,16 @@
   }
   }])
 
-  function getLetter(code){
-    for(var key in dict) {
-      if (arraysEqual(dict[key], code))
+  function getLetter(alphabet, code){
+    for (var i = 0; i < 4; i++) {
+      if (i>=code.length)
+        code[i] = ' '
+    }
+    for(var key in alphabet) {
+      if (arraysEqual(alphabet[key], code))
         return key
     }
     return 0
-    console.log(code)
   }
 
   function median(values){

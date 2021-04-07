@@ -20,19 +20,22 @@
       <div class="text">{{micMessage}}
       </div>
     </div>
-  </div>
-
-  <div class="button" ng-repeat="value in alphabet">
-    <div ng-click="synMorse(value)" class="text">{{value}}
+    <div class="button" ng-click="showCode=!showCode">
+      <div class="text">code
+      </div>
     </div>
   </div>
 
-  <div>Amplitude: {{amplitude}} </div>
+  <div ng-class="letter==key ? 'recbutton' : 'button'" ng-repeat="(key, value) in alphabet">
+    <div ng-click="synMorse(key)" class="text">{{key}}
+    </div>
+    <div ng-show="showCode">
+    <span ng-repeat="code in alphabet[key] track by $index"> {{code}} </span>
+    </div>
+  </div>
+
+  <!-- <div>Amplitude: {{amplitude}} </div>
   <div>{{amplitudeThreshold}} </div>
   <div>Ratio: {{ratio}} </div>
-  <div>{{ratioThreshold}} </div>
-  <div ng-show="trigger">TRIGGER</div>
-  <div ng-show="short">SHORT</div>
-  <div ng-show="long">LONG</div>
-  <div>{{code}}</div>
+  <div>{{ratioThreshold}} </div> -->
 </body>
