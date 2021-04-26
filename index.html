@@ -25,6 +25,10 @@
       <div class="text">code
       </div>
     </div>
+    <div class="button" ng-click="showTune=!showTune">
+      <div class="text">tune
+      </div>
+    </div>
   </div>
 
   <div ng-class="letter==key ? 'recbutton' : 'button'" ng-repeat="(key, value) in alphabet">
@@ -33,6 +37,39 @@
     <div ng-show="showCode">
     <span ng-repeat="code in alphabet[key] track by $index"> {{code}} </span>
     </div>
+  </div>
+<div ng-show="showTune">
+  <div style="text-align:center">
+    <div class="button" ng-click="setInterval(-1)">
+      <div class="text">-</div>
+    </div>
+    Interval: {{interval}} ms
+    <div class="button" ng-click="setInterval(1)">
+      <div class="text">+</div>
+    </div>
+  </div>
+  <div style="text-align:center">
+    <div class="button" ng-click="setAmplitudeThreshold(-1)">
+      <div class="text">-</div>
+    </div>
+    Amplitude: {{amplitude}} / {{amplitudeThreshold}}
+    <div class="button" ng-click="setAmplitudeThreshold(1)">
+      <div class="text">+</div>
+    </div>
+  </div>
+  <div style="text-align:center">
+    <div class="button" ng-click="setRatioThreshold(-1)">
+      <div class="text">-</div>
+    </div>
+    Ratio: {{ratio}} / {{ratioThreshold}}
+    <div class="button" ng-click="setRatioThreshold(1)">
+      <div class="text">+</div>
+    </div>
+  </div>
+
+    <div>
+      <div>
+
   </div>
 
   <!-- <div>Amplitude: {{amplitude}} </div>

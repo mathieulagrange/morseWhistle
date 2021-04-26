@@ -29,13 +29,16 @@
       'z': ['-', '-', '.', '.']
     }
 
+    $scope.showTune = false
+    $scope.showCode = false
     fMinHertz = 500
     fMaxHertz = 2000
 
     hop = 25 // ms
 
-    clipDuration = 20 // interval
 
+    clipDuration = 20 // interval
+    $scope.interval = hop*clipDuration
     bufferMax = new Float32Array(clipDuration);
     bufferMedian = new Float32Array(clipDuration);
     bufferIndex = 0
@@ -131,8 +134,14 @@
       }
     }
 
-      $scope.amplitude = meanMax/clipDuration
-      $scope.ratio = (meanMax-meanMedian)/clipDuration
+      $scope.amplitude = (meanMax/clipDuration).toFixed(1)
+      if ($scope.amplitude.length>5) {
+        $scope.amplitude = '-99.9'
+      }
+      $scope.ratio = ((meanMax-meanMedian)/clipDuration).toFixed(1)
+      if ($scope.ratio.length<4) {
+        $scope.ratio = '0'+$scope.ratio
+      }
       max=0
       med=0
       if (waitNext>0) {
@@ -191,7 +200,17 @@
       }
     }
 
+    $scope.setAmplitudeThreshold = function(value) {
+      $scope.amplitudeThreshold += value
+    }
 
+    $scope.setRatioThreshold = function(value) {
+      $scope.ratioThreshold += value
+    }
+    $scope.setInterval = function(value) {
+      clipDuration += value
+      $scope.interval = (hop*clipDuration)
+    }
 
     $scope.setMic = function() {
       if (micSet){
