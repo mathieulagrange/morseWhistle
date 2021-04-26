@@ -17,51 +17,54 @@
 <body  ng-controller="whistleController">
 
   <div style="text-align:center">
-    <div class="recbutton" ng-click="setMic()">
+    <div ng-class="micSet==1 ? 'redButton' : 'button'" ng-click="setMic()">
       <div class="text">{{micMessage}}
       </div>
     </div>
-    <div class="button" ng-click="showCode=!showCode">
+    <div ng-class="showCode==true ? 'blueButton' : 'button'" ng-click="showCode=!showCode">
       <div class="text">code
       </div>
     </div>
-    <div class="button" ng-click="showTune=!showTune">
+    <div ng-class="showTune==true ? 'blueButton' : 'button'" ng-click="showTune=!showTune">
       <div class="text">tune
       </div>
     </div>
   </div>
 
-  <div ng-class="letter==key ? 'recbutton' : 'button'" ng-repeat="(key, value) in alphabet">
+  <div ng-class="letter==key ? 'redButton' : 'blueButton'" ng-repeat="(key, value) in alphabet">
     <div ng-click="synMorse(key)" class="text">{{key}}
     </div>
     <div ng-show="showCode">
     <span ng-repeat="code in alphabet[key] track by $index"> {{code}} </span>
     </div>
   </div>
-<div ng-show="showTune">
-  <div style="text-align:center">
+<div style="text-align:center" class="text" ng-show="showTune">
+  Interval
+  <div >
     <div class="button" ng-click="setInterval(-1)">
       <div class="text">-</div>
     </div>
-    <div class="text">  Interval: {{interval}} ms</div>
+    <div class="text">  {{interval}} ms</div>
     <div class="button" ng-click="setInterval(1)">
       <div class="text">+</div>
     </div>
   </div>
+  Amplitude
   <div style="text-align:center">
     <div class="button" ng-click="setAmplitudeThreshold(-1)">
       <div class="text">-</div>
     </div>
-    <div class="text">  Amplitude: {{amplitude}} / {{amplitudeThreshold}} </div>
+    <div class="text">  {{amplitude}} / {{amplitudeThreshold}} </div>
     <div class="button" ng-click="setAmplitudeThreshold(1)">
       <div class="text">+</div>
     </div>
   </div>
+  Ratio
   <div style="text-align:center">
     <div class="button" ng-click="setRatioThreshold(-1)">
       <div class="text">-</div>
     </div>
-    <div class="text">  Ratio: {{ratio}} / {{ratioThreshold}} </div>
+    <div class="text">  {{ratio}} / {{ratioThreshold}} </div>
     <div class="button" ng-click="setRatioThreshold(1)">
       <div class="text">+</div>
     </div>

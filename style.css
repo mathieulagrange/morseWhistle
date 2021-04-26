@@ -1,4 +1,15 @@
 .button {
+  background-color: grey;
+  width: 20vmin;
+  height: 12vmin;
+  display: inline-block;
+  border-radius: 15px;
+  text-align: center;
+  margin: 5px;
+  font-size: 6vmin;
+}
+
+.blueButton {
   background-color: lightblue;
   width: 20vmin;
   height: 12vmin;
@@ -6,9 +17,10 @@
   border-radius: 15px;
   text-align: center;
   margin: 5px;
+  font-size: 6vmin;
 }
 
-.recbutton {
+.redButton {
   background-color: red;
   width: 20vmin;
   height: 12vmin;
@@ -16,6 +28,7 @@
   border-radius: 15px;
   text-align: center;
   margin: 5px;
+  font-size: 6vmin;
 }
 
 .text {

@@ -37,7 +37,7 @@
     hop = 25 // ms
 
 
-    clipDuration = 20 // interval
+    clipDuration = 16 // interval
     $scope.interval = hop*clipDuration
     bufferMax = new Float32Array(clipDuration);
     bufferMedian = new Float32Array(clipDuration);
@@ -54,10 +54,11 @@
 
     $scope.amplitude = 0
     $scope.ratio = 0
-    $scope.micMessage = 'record'
+    $scope.micMessage = 'listen'
 
     dataArray = null
     var analyser = null
+    var warmedBuffer = false
 
     // frame accumulator
     var frameAccumulator = 0
@@ -75,7 +76,7 @@
     var codeIndex = 0
     $scope.code = [' ', ' ', ' ', ' ']
 
-    var micSet = false
+    $scope.micSet = false
     var waitNext = 0
 
     function update() {
@@ -92,6 +93,9 @@
       }
       bufferMax[bufferIndex] = m
       bufferMedian[bufferIndex] = median(data)
+      if (bufferIndex==clipDuration-1) {
+        warmedBuffer = true
+      }
       bufferIndex = (bufferIndex+1)%clipDuration
       meanMax = 0
       meanMedian = 0
@@ -99,7 +103,7 @@
         meanMax += bufferMax[i]
         meanMedian += bufferMedian[i]
       }
-      if (waitNext == 0) {
+      if (warmedBuffer && waitNext == 0) {
         if (meanMax-meanMedian > $scope.ratioThreshold*clipDuration  && meanMax > $scope.amplitudeThreshold*clipDuration) {
           nbWhistleClip += 1
           waitNext = clipDuration
@@ -124,6 +128,7 @@
           if (codeIndex>0 && (nbSilentClip>3||codeIndex==4)) {
              console.log(code);
              $scope.letter = getLetter($scope.alphabet, code)
+             speak($scope.letter)
              $timeout(function () {
                $scope.letter = ''
              }, 1000);
@@ -134,11 +139,12 @@
       }
     }
 
-      $scope.amplitude = (meanMax/clipDuration).toFixed(1)
+      $scope.amplitude = (meanMax/clipDuration).toFixed(0)
       if ($scope.amplitude.length>5) {
         $scope.amplitude = '-99.9'
       }
-      $scope.ratio = ((meanMax-meanMedian)/clipDuration).toFixed(1)
+
+      $scope.ratio = ((meanMax-meanMedian)/clipDuration).toFixed(0)
       if ($scope.ratio.length<4) {
         $scope.ratio = '0'+$scope.ratio
       }
@@ -149,7 +155,7 @@
       }
 
       $timeout(function() {
-        if (micSet) {update()}
+        if ($scope.micSet) {update()}
       }, hop)
     }
 
@@ -213,14 +219,14 @@
     }
 
     $scope.setMic = function() {
-      if (micSet){
-        micSet = false
-        $scope.micMessage = 'record'
+      if ($scope.micSet){
+        $scope.micSet = false
+        $scope.micMessage = 'listen'
         audioContext.close()
       }
       else {
-        $scope.micMessage = 'stop'
-        micSet=true
+        $scope.micMessage = 'pause'
+        $scope.micSet=true
     // monkeypatch Web Audio
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -271,8 +277,17 @@
       mediaStreamSource.connect(analyser);
       console.log(audioContext);
       update()
+      speak('Listening')
   }
   }])
+
+  function speak (message) {
+    var msg = new SpeechSynthesisUtterance(message)
+    // var voices = window.speechSynthesis.getVoices()
+    // msg.voice = voices[0]
+    msg.lang = "en-US"
+    window.speechSynthesis.speak(msg)
+  }
 
   function getLetter(alphabet, code){
     for (var i = 0; i < 4; i++) {
